@@ -1,0 +1,51 @@
+name: Build Flutter APK From Drive
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install gdown
+        run: pip install gdown
+
+      - name: Download File From Drive
+        run: |
+          gdown --id 1cH9ocnr2kzv3ND4GSbZ6xSVym4sO2oVn -O app_code.zip
+          unzip app_code.zip -d flutter_project
+          
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          
+      - name: Build APK
+        run: |
+          cd flutter_project
+          # Agar main folder ke andar ek aur subfolder ho toh usme switch karne ke liye:
+          if [ -d "flutterflow" ]; then cd flutterflow; fi
+          if [ -f "pubspec.yaml" ] || [ -f "../pubspec.yaml" ]; then
+            flutter pub get
+            flutter build apk --release
+          else
+            echo "Error: pubspec.yaml file nahi mili!" && exit 1
+          fi
+          
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: |
+            flutter_project/**/build/app/outputs/flutter-apk/app-release.apk
+            flutter_project/build/app/outputs/flutter-apk/app-release.apk
